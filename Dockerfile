@@ -1,11 +1,19 @@
-FROM mcr.microsoft.com/playwright:v1.50.0-noble
 
-# Install the official Playwright MCP server globally
-RUN npm install -g @playwright/mcp@latest
+# Official Playwright MCP image
+# Includes Chromium and required browser dependencies
+FROM mcr.microsoft.com/playwright/mcp:latest
 
-# Railway automatically injects the PORT environment variable
+# Railway port configuration
 ENV PORT=8080
+
+# Expose MCP HTTP port
 EXPOSE 8080
 
-# Start Playwright MCP natively in HTTP/SSE mode
-CMD ["sh", "-c", "npx @playwright/mcp@latest --headless --no-sandbox --port ${PORT} --host 0.0.0.0"]
+# Override the image's default entrypoint
+# so Railway's dynamic PORT variable can expand
+ENTRYPOINT ["/usr/bin/tini", "-s", "--", "sh", "-c"]
+
+# Start Playwright MCP
+# Listen on all network interfaces
+# Run Chromium in headless mode
+CMD ["exec node /app/cli.js --headless --browser chromium --no-sandbox --host 0.0.0.0 --port ${PORT}"]
